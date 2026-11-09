@@ -4,3 +4,7 @@
 .settings/
 .idea/
 *.class
+.pdf
+.docx
+Atelier5.md
+.tex

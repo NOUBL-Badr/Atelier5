@@ -18,7 +18,7 @@ class OrderServiceTest {
     void processOrder_paiementReussi() {
         Order order = new Order("1", 100.0);
         when(orderRepository.findById("1")).thenReturn(order);
-        when(paymentProcessor.processPayment(order)).thenReturn(true);
+        when(paymentProcessor.processPayment("1", 100.0)).thenReturn(true);
 
         assertTrue(orderService.processOrder("1"));
         assertTrue(order.isPaid());
@@ -31,5 +31,42 @@ class OrderServiceTest {
 
         assertThrows(IllegalArgumentException.class, () -> orderService.processOrder("999"));
         verifyNoInteractions(paymentProcessor);
+    }
+
+    @Test // Scénario C : échec du paiement
+    void processOrder_paiementEchoue() {
+        Order order = new Order("2", 75.0);
+        when(orderRepository.findById("2")).thenReturn(order);
+        when(paymentProcessor.processPayment("2", 75.0)).thenReturn(false);
+
+        assertThrows(PaymentFailedException.class, () -> orderService.processOrder("2"));
+        assertFalse(order.isPaid());
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test // Scénario D : commande déjà payée
+    void processOrder_commandeDejaPayee() {
+        Order order = new Order("3", 50.0);
+        order.setPaid(true);
+        when(orderRepository.findById("3")).thenReturn(order);
+
+        assertTrue(orderService.processOrder("3"));
+        verifyNoInteractions(paymentProcessor);
+        verify(orderRepository, never()).save(any(Order.class));
+    }
+
+    @Test // Challenge : propagation d'une exception du processeur
+    void processOrder_exceptionDuProcesseurEstPropagee() {
+        Order order = new Order("4", 25.0);
+        RuntimeException failure = new RuntimeException("Banque indisponible");
+        when(orderRepository.findById("4")).thenReturn(order);
+        when(paymentProcessor.processPayment("4", 25.0)).thenThrow(failure);
+
+        RuntimeException thrown =
+                assertThrows(RuntimeException.class, () -> orderService.processOrder("4"));
+
+        assertSame(failure, thrown);
+        assertFalse(order.isPaid());
+        verify(orderRepository, never()).save(any(Order.class));
     }
 }

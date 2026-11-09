@@ -4,9 +4,9 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final PaymentProcessor paymentProcessor;
 
-    public OrderService(OrderRepository orderRepository, PaymentProcessor paymentProcessor) {
-        this.orderRepository = orderRepository;
+    public OrderService(PaymentProcessor paymentProcessor, OrderRepository orderRepository) {
         this.paymentProcessor = paymentProcessor;
+        this.orderRepository = orderRepository;
     }
 
     public boolean processOrder(String orderId) {
@@ -17,8 +17,8 @@ public class OrderService {
         if (order.isPaid()) {
             return true;
         }
-        if (!paymentProcessor.processPayment(order)) {
-            throw new PaymentFailedExeption("Échec du paiement pour la commande " + orderId);
+        if (!paymentProcessor.processPayment(order.getId(), order.getAmount())) {
+            throw new PaymentFailedException("Échec du paiement pour la commande " + orderId);
         }
         order.setPaid(true);
         orderRepository.save(order);

@@ -1,5 +1,5 @@
 package atelier5;
 
 public interface PaymentProcessor {
-    boolean processPayment(Order order);
+    boolean processPayment(String orderId, double amount);
 }
